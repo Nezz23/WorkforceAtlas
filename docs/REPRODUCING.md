@@ -43,7 +43,7 @@ cd web
 npm run build        # static export to web/out
 npm run pdf          # prints /brief/ to web/out/brief/workforce-brief.pdf
 npm run test:e2e     # serves out/ and runs e2e/interact.mjs and e2e/a11y.mjs
-npm run lint && npx tsc --noEmit && npm test
+npm run lint && npm run typecheck && npm test
 cd .. && .venv/bin/python -m pytest -q
 ```
 

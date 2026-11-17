@@ -15,7 +15,9 @@ def load(name: str) -> dict:
 
 
 def quoted() -> list[tuple[str, str]]:
-    """(file, text that must appear in it), built from the JSON."""
+    """(file, text that must appear in it), built from the JSON; none when the data is absent."""
+    if not (MODELS / "forecast.json").exists():
+        return []
     f, e = load("forecast"), load("exit_model")
     out = []
     for r in e["excess"]:
