@@ -1,0 +1,234 @@
+@import "tailwindcss";
+
+/* ── Tokens. Every colour in the app comes from here. Light is the default; dark has its own validated steps. ── */
+:root {
+  --paper: #f6f4ef;
+  --paper-2: #efece5;
+  --ink: #15181d;
+  --ink-2: #474c55;
+  --ink-3: #62666e;
+  --rule: #dcd8cf;
+  --rule-strong: #b9b4a9;
+  --accent: #1e3a63;
+  --accent-ink: #f6f4ef;
+  --accent-soft: #e3e7ee;
+  --teal: #2f6f6a;
+  --band: #e6e2d9;
+  --focus: #1e3a63;
+  /* categorical: separation types, fixed order (validated: dataviz validator, light, surface --paper) */
+  --c-quit: #3a62a8;
+  --c-retirement: #00968a;
+  --c-drp: #d49a00;
+  --c-rif: #b8435a;
+  --c-termination: #7a5fc0;
+  --c-other: #a39e94;
+  --c-transfer: #cbc6bb;
+  --good: #2f6f4f;
+  --bad: #9c3b2e;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --paper: #121418;
+  --paper-2: #181b20;
+  --ink: #ebe8e1;
+  --ink-2: #b4b1aa;
+  --ink-3: #8a8780;
+  --rule: #2a2e35;
+  --rule-strong: #444952;
+  --accent: #6f91c9;
+  --accent-ink: #121418;
+  --accent-soft: #1d2533;
+  --teal: #6fb3ab;
+  --band: #20242b;
+  --focus: #6f91c9;
+  --c-quit: #5f8bd6;
+  --c-retirement: #1fa58a;
+  --c-drp: #b5820c;
+  --c-rif: #d6607a;
+  --c-termination: #9479d9;
+  --c-other: #6f6c66;
+  --c-transfer: #4a4844;
+  --good: #7fbf9a;
+  --bad: #e08a7a;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-serif: var(--font-newsreader), Georgia, serif;
+  --font-sans: var(--font-public-sans), system-ui, sans-serif;
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-accent: var(--accent);
+  --color-teal: var(--teal);
+}
+
+/* ── Base ── */
+html { background: var(--paper); }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 160ms ease-out, color 160ms ease-out;
+}
+::selection { background: var(--accent-soft); }
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
+
+/* ── Type scale: 12 · 14 · 16 · 22 · 34 ── */
+.t-display, .t-head { text-wrap: balance; }
+.t-lead, .measure, .t-small { text-wrap: pretty; }
+.t-display { font-family: var(--font-serif); font-size: 34px; line-height: 1.15; font-weight: 400; letter-spacing: -0.01em; }
+.t-head { font-family: var(--font-serif); font-size: 22px; line-height: 1.3; font-weight: 500; letter-spacing: -0.005em; }
+.t-lead { font-family: var(--font-serif); font-size: 22px; line-height: 1.45; font-weight: 400; }
+.t-body { font-size: 16px; line-height: 1.6; }
+.t-small { font-size: 14px; line-height: 1.5; }
+.t-micro { font-size: 12px; line-height: 1.4; }
+.t-kicker { font-size: 12px; line-height: 1.4; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.t-stat { font-size: 22px; line-height: 1.2; font-weight: 500; letter-spacing: -0.01em; }
+@media (max-width: 640px) {
+  .t-display { font-size: 28px; }
+  .t-lead { font-size: 19px; }
+  .t-stat { font-size: 22px; line-height: 1.2; font-weight: 500; letter-spacing: -0.01em; }
+}
+
+/* ── Headline figures: three shared rows (label, value, detail); values share a baseline across a row ── */
+.figures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 32px; }
+.figure { display: grid; grid-template-rows: subgrid; grid-row: span 3; row-gap: 0; padding-bottom: 32px; }
+.figure > dt { align-self: start; padding-bottom: 10px; }
+.figure > dd:nth-of-type(1) { align-self: baseline; }
+.figure > dd + dd { padding-top: 10px; align-self: start; }
+.figure-lead { grid-column: 1 / -1; }
+@media (min-width: 1024px) {
+  .figures { grid-template-columns: 1.45fr repeat(3, minmax(0, 1fr)); }
+  .figure-lead { grid-column: auto; }
+}
+@media (max-width: 639px) { .figures { grid-template-columns: minmax(0, 1fr); } }
+
+/* ── Layout ── */
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+@media (max-width: 640px) { .wrap { padding: 0 16px; } }
+.chapter { padding: 72px 0; border-top: 1px solid var(--rule); }
+@media (max-width: 640px) { .chapter { padding: 48px 0; } }
+.measure { max-width: 680px; }
+
+/* ── Trust marks ── */
+.mark { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--ink-3); }
+.mark::before { content: ""; width: 14px; height: 8px; border: 1px solid var(--ink-3); }
+.mark[data-kind="observed"]::before { background: var(--ink-3); }
+.mark[data-kind="derived"]::before {
+  background: repeating-linear-gradient(135deg, var(--ink-3) 0 1.5px, transparent 1.5px 4px);
+}
+.mark[data-kind="modeled"]::before { border-style: dashed; }
+
+/* ── Controls ── */
+.seg { display: inline-flex; border: 1px solid var(--rule-strong); border-radius: 2px; }
+.seg button { font-size: 12px; font-weight: 500; padding: 4px 12px; min-height: 28px; color: var(--ink-2); cursor: pointer;
+  transition: background-color 160ms ease-out, color 160ms ease-out; }
+.seg button + button { border-left: 1px solid var(--rule-strong); }
+.seg button:hover { color: var(--ink); background: var(--paper-2); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); font-weight: 600; }
+.link { display: inline-flex; align-items: center; min-height: 24px; color: var(--accent); text-decoration: underline; text-decoration-color: var(--rule-strong); text-underline-offset: 3px;
+  transition: text-decoration-color 160ms ease-out; }
+@media (max-width: 640px) { .link { min-height: 32px; } }
+@media (max-width: 640px) { .link.tap { min-height: 44px; } }
+.link:hover { text-decoration-color: var(--accent); }
+
+/* ── Charts ── */
+.chart text { font-family: var(--font-sans); font-size: 12px; fill: var(--ink-3); font-feature-settings: "tnum" 1; }
+.chart .axis line, .chart .grid line { stroke: var(--rule); shape-rendering: crispEdges; }
+.chart .baseline { stroke: var(--rule-strong); shape-rendering: crispEdges; }
+.chart .label-strong { fill: var(--ink); font-weight: 600; }
+.chart .label-ink { fill: var(--ink-2); }
+.chart .annot line { stroke: var(--ink-3); }
+/* A paper-coloured halo keeps chart text legible where it crosses lines or bars. */
+.chart .halo { paint-order: stroke; stroke: var(--paper); stroke-width: 4px; stroke-linejoin: round; }
+.tip { position: absolute; pointer-events: none; z-index: 20; background: var(--paper); border: 1px solid var(--rule-strong);
+  padding: 8px 10px; font-size: 12px; line-height: 1.45; color: var(--ink); min-width: 160px; max-width: 260px;
+  transition: opacity 120ms ease-out; }
+.tip .row { display: flex; justify-content: space-between; gap: 16px; }
+.tip .muted { color: var(--ink-3); }
+
+.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.data-table th { text-align: left; font-weight: 600; color: var(--ink-3); border-bottom: 1px solid var(--rule-strong); padding: 6px 8px; }
+.data-table td { border-bottom: 1px solid var(--rule); padding: 6px 8px; }
+.data-table td.num, .data-table th.num { text-align: right; }
+
+@keyframes draw { from { stroke-dashoffset: var(--len); } to { stroke-dashoffset: 0; } }
+.draw { stroke-dasharray: var(--len); animation: draw 600ms ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .draw { animation: none; stroke-dasharray: none; }
+  * { transition: none !important; }
+}
+
+/* ── Navigation ── */
+.nav-link { position: relative; transition: color 160ms ease-out; }
+.nav-link:hover { color: var(--ink); }
+.nav-link[aria-current="page"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px;
+  background: var(--accent); }
+@media (max-width: 1023px) { .nav-mobile .nav-link[aria-current="page"]::after { left: 8px; right: 8px; bottom: 0; } }
+.row-link text { transition: fill 160ms ease-out; }
+.row-link:hover text { fill: var(--accent); text-decoration: underline; }
+.palette[open] { animation: rise 160ms ease-out; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* Phone navigation: scrolls with snap, and a fade at the edge shows there is more. */
+.nav-scroll { overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+  mask-image: linear-gradient(to right, #000 85%, transparent); }
+.nav-scroll::-webkit-scrollbar { display: none; }
+
+/* ── Form controls ── */
+.seg-btn { font-size: 12px; font-weight: 500; padding: 6px 12px; min-height: 32px; border: 1px solid var(--rule-strong); border-radius: 2px;
+  color: var(--ink); cursor: pointer; transition: background-color 160ms ease-out, border-color 160ms ease-out; }
+.seg-btn:hover:not(:disabled) { background: var(--paper-2); border-color: var(--ink-3); }
+.seg-btn:disabled { color: var(--ink-3); cursor: not-allowed; }
+.field { appearance: none; -webkit-appearance: none; background-color: var(--paper); color: var(--ink); border: 1px solid var(--rule-strong);
+  border-radius: 2px; height: 36px; padding: 0 36px 0 10px; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-2) 50%), linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 15px, calc(100% - 13px) 15px; background-size: 5px 5px; background-repeat: no-repeat; }
+.field:hover { border-color: var(--ink-3); }
+
+/* Sliders: one track and thumb in both themes; the tick marks the forecast (the default) on every track, whatever its range. */
+.range { -webkit-appearance: none; appearance: none; width: 100%; height: 24px; background: transparent; cursor: pointer; }
+.range::-webkit-slider-runnable-track { height: 2px; background: var(--rule-strong); }
+.range::-moz-range-track { height: 2px; background: var(--rule-strong); }
+.range::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -7px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--paper); box-shadow: 0 0 0 1px var(--accent); }
+.range::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--paper); box-shadow: 0 0 0 1px var(--accent); }
+.tick { position: relative; z-index: 0; }
+.tick::before { content: ""; position: absolute; top: 4px; bottom: 4px; width: 1px; background: var(--ink-3); left: calc(8px + (100% - 16px) * var(--f)); pointer-events: none; }
+
+/* The simulator's chart and figures pin under the header (56px bar + 44px phone nav) below lg; short screens leave them in flow. */
+@media (max-width: 1023px) and (min-height: 640px) {
+  .range { scroll-margin-top: 440px; }   /* a focused slider scrolls clear of the pinned panel */
+  .lab-panel { position: sticky; top: 100px; z-index: 10; background: var(--paper); padding: 8px 0 0; border-bottom: 1px solid var(--rule); }
+}
+@media (max-width: 639px) { .lab-kpis dd.t-stat { font-size: 15px; } .lab-kpis dt { font-size: 11px; } }
+
+/* Tables that do not fit scroll sideways, with a shadow at the edge that still has more. */
+.scroll-x { overflow-x: auto; background:
+  linear-gradient(to right, var(--paper) 30%, transparent) left / 24px 100% no-repeat local,
+  linear-gradient(to left, var(--paper) 30%, transparent) right / 24px 100% no-repeat local,
+  linear-gradient(to right, var(--rule-strong), transparent) left / 10px 100% no-repeat scroll,
+  linear-gradient(to left, var(--rule-strong), transparent) right / 10px 100% no-repeat scroll; }
+.scroll-x .data-table th, .scroll-x .data-table td:first-child { white-space: nowrap; }
+
+/* ── Printable brief ── */
+@media print {
+  header, footer, .no-print, a[href="#main"] { display: none !important; }
+  body { background: #fff; font-size: 11pt; }
+  .memo { padding: 0; max-width: none; }
+  @page { margin: 18mm; }
+}
