@@ -1,0 +1,17 @@
+data/warehouse/
+data/raw/
+data/backup/
+data/build.log
+data/published/
+web/data/
+web/out/
+web/.next/
+web/node_modules/
+web/public/brief/*.pdf
+*.tsbuildinfo
+.venv/
+__pycache__/
+.pytest_cache/
+*.part
+*.tmp
+.DS_Store
