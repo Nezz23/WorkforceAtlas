@@ -23,7 +23,8 @@ check again before relying on them.
 3. **API token.** My Profile → API Tokens → Create Token → custom: permission *Account · Cloudflare Pages · Edit*,
    limited to this account. Copy it once.
 4. **GitHub environment.** Settings → Environments → New environment `production`. Add the secret
-   `CLOUDFLARE_API_TOKEN`. Add yourself as a required reviewer, so every deploy waits for your click.
+   `CLOUDFLARE_API_TOKEN`. (Required reviewers on an environment need a paid GitHub plan for private repositories,
+   so the gate is the `DEPLOY_ENABLED` variable, which only the repository owner can set.)
 5. **Repository variables** (Settings → Secrets and variables → Actions → Variables):
 
 | Variable | Value |
