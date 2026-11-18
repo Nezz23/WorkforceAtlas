@@ -4,7 +4,7 @@ An independent analysis of the U.S. federal civilian workforce from OPM's Federa
 September 2026: who works for the government, who is leaving, what they are paid, and where headcount is heading.
 It is not affiliated with, or endorsed by, the U.S. Office of Personnel Management (OPM).
 
-**Live site:** _set after the first deploy (see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md))_
+**Live site:** <https://workforce-atlas.pages.dev>
 
 ![Home](docs/audit/screens/home-desktop-light.png)
 
