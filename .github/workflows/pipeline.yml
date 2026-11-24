@@ -1,0 +1,154 @@
+# Monthly refresh. The warehouse (monthly cubes, a few hundred MB) and the published data are release assets, not git files.
+# A broken data contract fails the run, opens (or comments on) an issue and publishes nothing.
+name: pipeline
+on:
+  schedule:
+    - cron: "0 12 8 * *"   # the 8th of each month
+  workflow_dispatch:
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      contents: write   # release assets
+      issues: write     # failure and review issues
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: requirements.lock
+      - run: pip install --require-hashes -r requirements.lock
+      - name: Restore warehouse
+        run: |
+          set -euo pipefail
+          mkdir -p data
+          if out=$(gh release view warehouse 2>&1); then
+            # The save step writes warehouse-next.tar.gz first, so a cancelled upload of warehouse.tar.gz never loses both.
+            gh release download warehouse -p warehouse.tar.gz -O warehouse.tar.gz \
+              || gh release download warehouse -p warehouse-next.tar.gz -O warehouse.tar.gz
+            tar -xzf warehouse.tar.gz -C data
+            rm warehouse.tar.gz
+          elif grep -qi "not found" <<<"$out"; then
+            echo "No warehouse release yet: full rebuild."
+          else
+            echo "$out" >&2
+            exit 1
+          fi
+      - name: Restore last published data
+        # Gives pipeline.notices and pipeline.labour a previous file to keep when OPM or BLS cannot be reached.
+        run: scripts/fetch_data.sh || [ $? -eq 3 ]
+      - run: python -m pipeline.build
+      - run: python -m pipeline.notices
+      - run: python -m pipeline.labour
+      - run: python -m pipeline.publish
+      - run: python -m models.run
+      - run: python -m pipeline.web
+      - run: pytest -q
+      - name: Save warehouse
+        if: ${{ always() && hashFiles('data/warehouse/sources.json') != '' }}
+        run: |
+          set -euo pipefail
+          tar -czf warehouse.tar.gz -C data warehouse
+          gh release view warehouse >/dev/null 2>&1 || gh release create warehouse --title warehouse --notes "Pipeline cache, rebuildable from OPM."
+          cp warehouse.tar.gz warehouse-next.tar.gz
+          gh release upload warehouse warehouse-next.tar.gz --clobber
+          gh release upload warehouse warehouse.tar.gz --clobber
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build the site and run browser checks
+        working-directory: web
+        env:
+          # The public address for canonical links, the sitemap and robots.txt; set as a repository variable.
+          NEXT_PUBLIC_SITE_URL: ${{ vars.SITE_URL }}
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run build
+          npm run pdf
+          npm run test:e2e
+      - name: Publish data release
+        run: |
+          set -euo pipefail
+          scripts/package_data.sh
+          day=$(date -u +%F)
+          cp published.tar.gz "published-$day.tar.gz"
+          gh release view published-latest >/dev/null 2>&1 || gh release create published-latest --title published-latest --notes "Latest published cubes, models and facts."
+          gh release upload published-latest published.tar.gz --clobber
+          gh release view "published-$day" >/dev/null 2>&1 || gh release create "published-$day" --title "published-$day" --notes "Dated copy of the published data."
+          gh release upload "published-$day" "published-$day.tar.gz" --clobber
+      - name: Upload site
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: site
+          path: web/out
+          retention-days: 7
+      - name: Ask a person to review OPM data notices
+        if: ${{ success() }}
+        run: |
+          set -euo pipefail
+          n=$(python -c "import json;d=json.load(open('data/published/data_notices.json'));print(len(d.get('unreviewed') or [])+len(d.get('unparsed') or [])+(1 if d.get('fetch_error') else 0))")
+          [ "$n" -gt 0 ] || exit 0
+          body="$n OPM data notice item(s) need a person: unreviewed notices, release-note bullets that mention missing data but could not be parsed, or a failed fetch of the release notes. Please update ref/data_notices.csv. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          num=$(gh issue list --state open --search "Review OPM data notices in:title" --json number,title --jq '[.[] | select(.title | startswith("Review OPM data notices"))][0].number // empty')
+          if [ -n "$num" ]; then gh issue comment "$num" --body "$body"; else gh issue create --title "Review OPM data notices" --body "$body"; fi
+      - name: Report failure
+        if: ${{ failure() }}
+        run: |
+          set -euo pipefail
+          body="Run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Published data was not changed."
+          num=$(gh issue list --state open --search "Pipeline failed in:title" --json number,title --jq '[.[] | select(.title | startswith("Pipeline failed"))][0].number // empty')
+          if [ -n "$num" ]; then gh issue comment "$num" --body "$body"; else gh issue create --title "Pipeline failed $(date -u +%F)" --body "$body"; fi
+
+  # Public deployment to Cloudflare Pages by direct upload: only the built files leave GitHub, and Cloudflare never
+  # gets access to this (private) repository. Disabled until the owner approves and sets the repository variables
+  # DEPLOY_ENABLED='true', SITE_URL, CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_PROJECT, and the secret CLOUDFLARE_API_TOKEN
+  # (a token limited to "Cloudflare Pages: Edit"). See docs/DEPLOYMENT.md.
+  deploy:
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
+    needs: refresh
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: site
+          path: web/out
+      - name: Check the build before it goes public
+        run: |
+          set -euo pipefail
+          for v in SITE_URL CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_PROJECT; do
+            [ -n "$(printenv "$v")" ] || { echo "Set the repository variable $v before deploying." >&2; exit 1; }
+          done
+          scripts/check_public.sh web/out
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_PROJECT: ${{ vars.CLOUDFLARE_PROJECT }}
+      - name: Install the locked wrangler
+        working-directory: web
+        run: npm ci --ignore-scripts
+      - name: Deploy to Cloudflare Pages
+        working-directory: web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_PROJECT: ${{ vars.CLOUDFLARE_PROJECT }}
+        run: npx --no-install wrangler pages deploy out --project-name "$CLOUDFLARE_PROJECT" --branch main --commit-dirty=true

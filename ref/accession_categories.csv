@@ -1,0 +1,6 @@
+code,opm_label,kpi_group,government_wide
+AA,TRANSFER IN - INDIVIDUAL TRANSFER,transfer,false
+AB,TRANSFER IN - MASS TRANSFER,transfer,false
+AC,NEW HIRE - COMPETITIVE SERVICE APPOINTMENT,new_hire_competitive,true
+AD,NEW HIRE - EXCEPTED SERVICE APPOINTMENT,new_hire_excepted,true
+AE,NEW HIRE - SENIOR EXECUTIVE SERVICE (SES) APPT,new_hire_ses,true

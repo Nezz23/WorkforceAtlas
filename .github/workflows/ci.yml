@@ -1,0 +1,88 @@
+name: ci
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: requirements.lock
+      - run: pip install --require-hashes -r requirements.lock
+      - run: pytest -q
+      - run: pip install pip-audit && pip-audit -r requirements.lock
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm audit --omit=dev --audit-level=moderate
+
+  site:
+    # Builds the site from the published data release and runs the browser checks. Skipped until a release exists.
+    runs-on: ubuntu-latest
+    needs: [python, web]
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Fetch published data
+        id: data
+        run: |
+          set +e
+          scripts/fetch_data.sh
+          code=$?
+          set -e
+          if [ "$code" = 3 ]; then
+            echo "::notice::No published-latest release yet; skipping the site build and browser checks."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          elif [ "$code" != 0 ]; then
+            exit "$code"
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.data.outputs.available == 'true'
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: requirements.lock
+      - if: steps.data.outputs.available == 'true'
+        run: pip install --require-hashes -r requirements.lock && python -m pipeline.web
+      - if: steps.data.outputs.available == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - if: steps.data.outputs.available == 'true'
+        working-directory: web
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run build
+          npm run pdf
+          npm run test:e2e
+      - if: steps.data.outputs.available == 'true'
+        run: scripts/check_public.sh web/out

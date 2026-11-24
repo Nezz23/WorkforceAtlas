@@ -1,0 +1,10 @@
+code,opm_label,kpi_group,voluntary,government_wide
+SA,TRANSFER OUT - INDIVIDUAL TRANSFER,transfer,false,false
+SB,TRANSFER OUT - MASS TRANSFER,transfer,false,false
+SC,QUIT,quit,true,true
+SD,RETIREMENT - VOLUNTARY,retirement,true,true
+SE,RETIREMENT - EARLY OUT,retirement,true,true
+SG,RETIREMENT - OTHER,retirement_other,false,true
+SH,REDUCTION IN FORCE (RIF),rif,false,true
+SJ,TERMINATION (EXPIRED APPT/OTHER),termination,false,true
+SL,OTHER SEPARATION,other,false,true
